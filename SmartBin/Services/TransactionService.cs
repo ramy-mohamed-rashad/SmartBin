@@ -33,7 +33,7 @@ namespace SmartBin.Services
             _environment = environment;
             if (_onnxSession == null)
             {
-                string modelPath = Path.Combine(_environment.ContentRootPath, "AI_Models", "smart_bin_v3_model.onnx");
+                string modelPath = Path.Combine(_environment.ContentRootPath, "AI_Models", "smart_bin_best_model.onnx");
                 _onnxSession = new Lazy<InferenceSession>(() => new InferenceSession(modelPath));
             }
         }
