@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,21 +14,26 @@ namespace SmartBin
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            // 1. Add services to the container
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
-            builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Connection")));
+            builder.Services.AddEndpointsApiExplorer(); //  Moved to the correct place
+
+            // Database Context
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("Connection")));
+
+            // Application Services
             builder.Services.AddScoped<ITransactionService, TransactionService>();
             builder.Services.AddScoped<IBinSectionService, BinSectionService>();
             builder.Services.AddScoped<IBinService, BinService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
+            // Identity Setup
             builder.Services.AddIdentityCore<AppUser>()
                 .AddEntityFrameworkStores<AppDbContext>();
 
-
+            // Authentication & JWT Setup
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -50,6 +54,7 @@ namespace SmartBin
                 };
             });
 
+            // CORS Policy
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll",
@@ -61,9 +66,10 @@ namespace SmartBin
                     });
             });
 
+            // 2. Build the application
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // 3. Configure the HTTP request pipeline (Middleware)
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
@@ -71,17 +77,18 @@ namespace SmartBin
                 {
                     options.SwaggerEndpoint("/openapi/v1.json", "SmartBin API v1");
                 });
-
             }
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCors("AllowAll");
+
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
-            builder.Services.AddEndpointsApiExplorer();
+
+            // 4. Run the application
             app.Run();
         }
     }

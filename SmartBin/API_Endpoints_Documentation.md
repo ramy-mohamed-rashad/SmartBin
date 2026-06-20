@@ -209,6 +209,7 @@ Submit a throwing activity transaction from the bin hardware.
 - **Body** `(multipart/form-data)`:
   - `MaterialName`: `(string, optional)`
   - `Image`: `(file, optional)`
+  - `weight`: `(in gram) optional`
   *(Note: You must provide either a MaterialName or an Image. Both cannot be empty.)*
 - **Response**: 
   - `200 OK` on success.
