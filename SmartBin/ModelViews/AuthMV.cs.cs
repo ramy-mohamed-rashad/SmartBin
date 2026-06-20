@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace SmartBin.ModelViews
 {
@@ -28,5 +28,6 @@ namespace SmartBin.ModelViews
         public string Token { get; set; }
         public string Email { get; set; }
         public string UserId { get; set; }
+        public string Role { get; set; }
     }
 }

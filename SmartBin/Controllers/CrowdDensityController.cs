@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SmartBin.Services;
@@ -19,12 +19,12 @@ namespace SmartBin.Controllers
             _userManager = userManager;
         }
         [HttpGet]
-        public async Task<IActionResult> GetLastState(int BinId)
+        public async Task<IActionResult> GetLastState(int? BinId, int? CameraId)
         {
             var user = await _userManager.GetUserAsync(User);
-            var result = await _service.GetLastStateAsync(BinId, user);
+            var result = await _service.GetLastStateAsync(BinId, CameraId, user);
             if (result == null)
-                return NotFound(new { message = "Bin not found or no crowd density data available." });
+                return NotFound(new { message = "Device not found or no crowd density data available." });
             return Ok(result);
         }
         [HttpPost]

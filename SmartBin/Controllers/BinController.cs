@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +20,7 @@ namespace SmartBin.Controllers
         }
 
         [HttpPost("Create")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<String>> CreateBin()
         {
             string token = await _binService.CreateBin();

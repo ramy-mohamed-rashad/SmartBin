@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartBin.Models
 {
@@ -12,7 +13,12 @@ namespace SmartBin.Models
         public float AiConfidencePercentage { get; set; }
         public DateTime Timestamp { get; set; }
 
-        public int BinId { get; set; }
-        public Bin Bin { get; set; }
+        [ForeignKey("Bin")]
+        public int? BinId { get; set; }
+        public Bin? Bin { get; set; }
+
+        [ForeignKey("Camera")]
+        public int? CameraId { get; set; }
+        public Camera? Camera { get; set; }
     }
 }

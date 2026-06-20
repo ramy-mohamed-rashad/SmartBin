@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 namespace SmartBin.Models
@@ -12,5 +12,9 @@ namespace SmartBin.Models
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<SurroundingWaste> SurroundingWastes { get; set; }
         public DbSet<CrowdDensity> CrowdDensities { get; set; }
+        public DbSet<BinRequest> BinRequests { get; set; }
+        public DbSet<Camera> Cameras { get; set; }
+        public DbSet<CameraRequest> CameraRequests { get; set; }
+
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SmartBin.Models;
@@ -59,17 +59,21 @@ namespace SmartBin.Services
             if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
                 throw new Exception("Invalid email or password.");
 
-            var token = GenerateJwtToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
+            var primaryRole = roles.Contains("Admin") ? "Admin" : "User";
+
+            var token = await GenerateJwtToken(user, roles);
 
             return new AuthResponseMV
             {
                 Token = token,
                 Email = user.Email,
-                UserId = user.Id.ToString()
+                UserId = user.Id.ToString(),
+                Role = primaryRole
             };
         }
 
-        private string GenerateJwtToken(AppUser user)
+        private async Task<string> GenerateJwtToken(AppUser user, IList<string> roles)
         {
             var authClaims = new List<Claim>
             {
@@ -78,13 +82,18 @@ namespace SmartBin.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            // Pulls your secret key from appsettings.json
+            // Add role claims so [Authorize(Roles="Admin")] works
+            foreach (var role in roles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["JWT:ValidIssuer"],
                 audience: _configuration["JWT:ValidAudience"],
-                expires: DateTime.Now.AddDays(7), // Token lasts for 7 days
+                expires: DateTime.Now.AddDays(7),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );

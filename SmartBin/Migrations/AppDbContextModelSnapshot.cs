@@ -265,6 +265,46 @@ namespace SmartBin.Migrations
                     b.ToTable("Bins");
                 });
 
+            modelBuilder.Entity("SmartBin.Models.BinRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("RequesterName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BinRequests");
+                });
+
             modelBuilder.Entity("SmartBin.Models.BinSection", b =>
                 {
                     b.Property<int>("SectionId")
@@ -297,6 +337,80 @@ namespace SmartBin.Migrations
                     b.ToTable("BinSections");
                 });
 
+            modelBuilder.Entity("SmartBin.Models.Camera", b =>
+                {
+                    b.Property<int>("CameraId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CameraId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdentificationToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CameraId");
+
+                    b.HasIndex("IdentificationToken")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Cameras");
+                });
+
+            modelBuilder.Entity("SmartBin.Models.CameraRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("RequesterName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CameraRequests");
+                });
+
             modelBuilder.Entity("SmartBin.Models.CrowdDensity", b =>
                 {
                     b.Property<int>("CrowdId")
@@ -308,7 +422,10 @@ namespace SmartBin.Migrations
                     b.Property<float>("AiConfidencePercentage")
                         .HasColumnType("real");
 
-                    b.Property<int>("BinId")
+                    b.Property<int?>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CameraId")
                         .HasColumnType("int");
 
                     b.Property<string>("DensityLevel")
@@ -328,6 +445,8 @@ namespace SmartBin.Migrations
                     b.HasKey("CrowdId");
 
                     b.HasIndex("BinId");
+
+                    b.HasIndex("CameraId");
 
                     b.ToTable("CrowdDensities");
                 });
@@ -360,7 +479,10 @@ namespace SmartBin.Migrations
                     b.Property<float>("AiConfidencePercentage")
                         .HasColumnType("real");
 
-                    b.Property<int>("BinId")
+                    b.Property<int?>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CameraId")
                         .HasColumnType("int");
 
                     b.Property<int>("DetectedObjectsCount")
@@ -380,6 +502,8 @@ namespace SmartBin.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BinId");
+
+                    b.HasIndex("CameraId");
 
                     b.ToTable("SurroundingWastes");
                 });
@@ -476,6 +600,23 @@ namespace SmartBin.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SmartBin.Models.BinRequest", b =>
+                {
+                    b.HasOne("SmartBin.Models.Bin", "Bin")
+                        .WithMany()
+                        .HasForeignKey("BinId");
+
+                    b.HasOne("SmartBin.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SmartBin.Models.BinSection", b =>
                 {
                     b.HasOne("SmartBin.Models.Bin", "Bin")
@@ -495,26 +636,60 @@ namespace SmartBin.Migrations
                     b.Navigation("Material");
                 });
 
+            modelBuilder.Entity("SmartBin.Models.Camera", b =>
+                {
+                    b.HasOne("SmartBin.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SmartBin.Models.CameraRequest", b =>
+                {
+                    b.HasOne("SmartBin.Models.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId");
+
+                    b.HasOne("SmartBin.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SmartBin.Models.CrowdDensity", b =>
                 {
                     b.HasOne("SmartBin.Models.Bin", "Bin")
                         .WithMany("CrowdHistories")
-                        .HasForeignKey("BinId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("BinId");
+
+                    b.HasOne("SmartBin.Models.Camera", "Camera")
+                        .WithMany("CrowdHistories")
+                        .HasForeignKey("CameraId");
 
                     b.Navigation("Bin");
+
+                    b.Navigation("Camera");
                 });
 
             modelBuilder.Entity("SmartBin.Models.SurroundingWaste", b =>
                 {
                     b.HasOne("SmartBin.Models.Bin", "Bin")
                         .WithMany("WasteHistories")
-                        .HasForeignKey("BinId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("BinId");
+
+                    b.HasOne("SmartBin.Models.Camera", "Camera")
+                        .WithMany("WasteHistories")
+                        .HasForeignKey("CameraId");
 
                     b.Navigation("Bin");
+
+                    b.Navigation("Camera");
                 });
 
             modelBuilder.Entity("SmartBin.Models.Transaction", b =>
@@ -546,6 +721,13 @@ namespace SmartBin.Migrations
                     b.Navigation("CrowdHistories");
 
                     b.Navigation("Sections");
+
+                    b.Navigation("WasteHistories");
+                });
+
+            modelBuilder.Entity("SmartBin.Models.Camera", b =>
+                {
+                    b.Navigation("CrowdHistories");
 
                     b.Navigation("WasteHistories");
                 });
