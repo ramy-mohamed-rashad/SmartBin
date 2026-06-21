@@ -7,6 +7,7 @@ namespace SmartBin.Services
     public interface ICrowdDensityService
     {
         public Task<CrowdDensityResultMV> GetLastStateAsync(int? BinId, int? CameraId, AppUser user);
+        public Task<List<CrowdDensityResultMV>> GetHistoryAsync(int? BinId, int? CameraId, AppUser user, int take = 50);
         public string AddCrowdDensityAsync(CrowdDensityInsertMV crowdDensity, string token);
     }
 
@@ -54,6 +55,39 @@ namespace SmartBin.Services
                 };
             }
             return null;
+        }
+
+        public async Task<List<CrowdDensityResultMV>> GetHistoryAsync(int? BinId, int? CameraId, AppUser user, int take = 50)
+        {
+            IQueryable<CrowdDensity> query = null;
+            if (BinId.HasValue)
+            {
+                var bin = await _context.Bins.FirstOrDefaultAsync(b => b.BinId == BinId.Value && user.Id == b.UserId);
+                if (bin == null) return new List<CrowdDensityResultMV>();
+                query = _context.CrowdDensities.Where(s => s.BinId == BinId.Value);
+            }
+            else if (CameraId.HasValue)
+            {
+                var camera = await _context.Cameras.FirstOrDefaultAsync(c => c.CameraId == CameraId.Value && user.Id == c.UserId);
+                if (camera == null) return new List<CrowdDensityResultMV>();
+                query = _context.CrowdDensities.Where(s => s.CameraId == CameraId.Value);
+            }
+            else
+            {
+                return new List<CrowdDensityResultMV>();
+            }
+
+            return await query
+                .OrderByDescending(s => s.Timestamp)
+                .Take(take)
+                .Select(s => new CrowdDensityResultMV
+                {
+                    DensityLevel = s.DensityLevel,
+                    PeopleCount = s.PeopleCount,
+                    AiConfidencePercentage = s.AiConfidencePercentage,
+                    Timestamp = s.Timestamp
+                })
+                .ToListAsync();
         }
 
         public string AddCrowdDensityAsync(CrowdDensityInsertMV crowdDensity, string token)

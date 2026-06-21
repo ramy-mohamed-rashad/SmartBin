@@ -27,6 +27,14 @@ namespace SmartBin.Controllers
                 return NotFound(new { message = "Device not found or no crowd density data available." });
             return Ok(result);
         }
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetHistory(int? BinId, int? CameraId, int take = 50)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var result = await _service.GetHistoryAsync(BinId, CameraId, user, take);
+            return Ok(result);
+        }
         [HttpPost]
         public async Task<IActionResult> AddCrowdDensity([FromForm] CrowdDensityInsertMV crowdDensity, [FromHeader(Name = "Token")] string token)
         {

@@ -29,6 +29,14 @@ namespace SmartBin.Controllers
             return Ok(result);
 
         }
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetHistory(int? BinId, int? CameraId, int take = 50)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var result = await _service.GetHistoryAsync(BinId, CameraId, user, take);
+            return Ok(result);
+        }
         [HttpPost]
         public async Task<IActionResult> AddSurroundingWaste([FromForm] SurroundingWasteInsertMV waste, [FromHeader(Name = "Token")] string token)
         {

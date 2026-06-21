@@ -7,6 +7,7 @@ namespace SmartBin.Services
     public interface ISurroundingWasteService
     {
         public Task<SurroundingWasteResultMV> GetLastStateAsync(int? BinId, int? CameraId, AppUser user);
+        public Task<List<SurroundingWasteResultMV>> GetHistoryAsync(int? BinId, int? CameraId, AppUser user, int take = 50);
         public string AddSurroundingWasteAsync(SurroundingWasteInsertMV waste, string token);
     }
 
@@ -58,6 +59,41 @@ namespace SmartBin.Services
                 };
             }
             return null;
+        }
+
+        public async Task<List<SurroundingWasteResultMV>> GetHistoryAsync(int? BinId, int? CameraId, AppUser user, int take = 50)
+        {
+            IQueryable<SurroundingWaste> query = null;
+            if (BinId.HasValue)
+            {
+                var bin = await _context.Bins.FirstOrDefaultAsync(b => b.BinId == BinId.Value && user.Id == b.UserId);
+                if (bin == null) return new List<SurroundingWasteResultMV>();
+                query = _context.SurroundingWastes.Where(s => s.BinId == BinId.Value);
+            }
+            else if (CameraId.HasValue)
+            {
+                var camera = await _context.Cameras.FirstOrDefaultAsync(c => c.CameraId == CameraId.Value && user.Id == c.UserId);
+                if (camera == null) return new List<SurroundingWasteResultMV>();
+                query = _context.SurroundingWastes.Where(s => s.CameraId == CameraId.Value);
+            }
+            else
+            {
+                return new List<SurroundingWasteResultMV>();
+            }
+
+            return await query
+                .OrderByDescending(s => s.Timestamp)
+                .Take(take)
+                .Select(s => new SurroundingWasteResultMV
+                {
+                    Id = s.Id,
+                    WasteLevel = s.WasteLevel,
+                    ImageUrl = s.ImageUrl,
+                    DetectedObjectsCount = s.DetectedObjectsCount,
+                    AiConfidencePercentage = s.AiConfidencePercentage,
+                    Timestamp = s.Timestamp
+                })
+                .ToListAsync();
         }
 
         public string AddSurroundingWasteAsync(SurroundingWasteInsertMV waste, string token)
