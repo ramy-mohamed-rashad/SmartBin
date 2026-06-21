@@ -33,7 +33,7 @@ namespace SmartBin.Services
             _environment = environment;
             if (_onnxSession == null)
             {
-                string modelPath = Path.Combine(_environment.ContentRootPath, "AI_Models", "smart_bin_v3_model.onnx");
+                string modelPath = Path.Combine(_environment.ContentRootPath, "AI_Models", "smart_bin_best_model.onnx");
                 _onnxSession = new Lazy<InferenceSession>(() => new InferenceSession(modelPath));
             }
         }
@@ -45,11 +45,16 @@ namespace SmartBin.Services
             {
                 throw new Exception("Bin not found with the provided IdentificationToken.");
             }
+
             var newTransaction = new Transaction
             {
                 BinId = bin.BinId,
                 Timestamp = DateTime.UtcNow,
+                //Weight = transaction.Weight
             };
+
+            // Variable to hold the name so we don't get a NullReferenceException at the end
+            string finalMaterialName = string.Empty;
 
             // IF WE HAVE AN IMAGE, USE THE AI
             if (transaction.Image != null)
@@ -73,6 +78,23 @@ namespace SmartBin.Services
                 {
                     var aiResult = await AnalyzeImageAsync(aiStream);
 
+                    // Weight Override Logic
+                    //int glassMinimumWeightGrams = 100;
+                    //bool isPredictedGlass = aiResult.MaterialName.Equals("Glass", StringComparison.OrdinalIgnoreCase);
+                    //bool isPredictedPlastic = aiResult.MaterialName.Equals("Plastic", StringComparison.OrdinalIgnoreCase);
+                    //Console.WriteLine(isPredictedGlass);
+                    //if (isPredictedGlass && transaction.Weight < glassMinimumWeightGrams)
+                    //{
+                    //    // Override the AI prediction
+                    //    aiResult.MaterialName = "Plastic";
+                    //    aiResult.Confidence = 80;
+                    //}
+                    //if(isPredictedPlastic && transaction.Weight > glassMinimumWeightGrams)
+                    //{
+                    //    aiResult.MaterialName = "Glass";
+                    //    aiResult.Confidence = 80;
+                    //}
+
                     // 3. Find the material based on the AI's prediction
                     Material material = await _context.Materials.FirstOrDefaultAsync(m => m.Name == aiResult.MaterialName);
                     if (material == null)
@@ -83,13 +105,8 @@ namespace SmartBin.Services
                     // 4. Update the transaction with the AI data
                     newTransaction.MaterialId = material.MaterialId;
                     newTransaction.AiConfidencePercentage = aiResult.Confidence;
+                    finalMaterialName = material.Name; // Save name for the return model
                 }
-
-                _context.Transactions.Add(newTransaction);
-                await _context.SaveChangesAsync();
-                
-
-
             }
             // IF NO IMAGE, RELY ON THE MANUAL MATERIAL NAME
             else
@@ -99,21 +116,28 @@ namespace SmartBin.Services
                 {
                     throw new Exception("Material not found with the provided MaterialName.");
                 }
+
                 newTransaction.AiConfidencePercentage = 0;
                 newTransaction.MaterialId = material.MaterialId;
-                _context.Transactions.Add(newTransaction);
-                await _context.SaveChangesAsync();
+                finalMaterialName = material.Name; // Save name for the return model
             }
-            var TransactionResult = new TransactionResultMV
+
+            // 5. Save everything to the database exactly once
+            _context.Transactions.Add(newTransaction);
+            await _context.SaveChangesAsync();
+
+            // 6. Return the mapped view model
+            var transactionResult = new TransactionResultMV
             {
                 BinId = newTransaction.BinId,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = newTransaction.Timestamp, // Reuse the exact same timestamp 
                 AiConfidencePercentage = newTransaction.AiConfidencePercentage,
                 ImageUrl = newTransaction.ImageUrl,
-                MaterialName = newTransaction.Material.Name,
+                MaterialName = finalMaterialName, // Safely use the string variable here
                 TransactionId = newTransaction.TransactionId
             };
-            return TransactionResult;
+
+            return transactionResult;
         }
 
         public async Task<(string MaterialName, float Confidence)> AnalyzeImageAsync(Stream imageStream)

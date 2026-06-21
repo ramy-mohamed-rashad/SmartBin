@@ -15,6 +15,7 @@ namespace SmartBin.ModelViews
     {
         public string? MaterialName { get; set; }
         public IFormFile? Image { get; set; }
+        public int? Weight { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

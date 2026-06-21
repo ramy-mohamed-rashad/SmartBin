@@ -978,3 +978,15 @@ Device endpoints:
 | `401 Unauthorized` | Missing or invalid JWT token |
 | `403 Forbidden` | Logged in but not Admin |
 | `404 Not Found` | Resource doesn't exist or doesn't belong to user |
+### Add Transaction
+Submit a throwing activity transaction from the bin hardware.
+- **Endpoint**: `POST /api/Transaction`
+- **Header**: `Token` (hardware token)
+- **Body** `(multipart/form-data)`:
+  - `MaterialName`: `(string, optional)`
+  - `Image`: `(file, optional)`
+  - `weight`: `(in gram) optional`
+  *(Note: You must provide either a MaterialName or an Image. Both cannot be empty.)*
+- **Response**: 
+  - `200 OK` on success.
+  - `400 BadRequest` on validation failure or missing mandatory requirements.

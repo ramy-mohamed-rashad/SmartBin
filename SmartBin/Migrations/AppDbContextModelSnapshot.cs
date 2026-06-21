@@ -531,6 +531,9 @@ namespace SmartBin.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("Weight")
+                        .HasColumnType("int");
+
                     b.HasKey("TransactionId");
 
                     b.HasIndex("BinId");
