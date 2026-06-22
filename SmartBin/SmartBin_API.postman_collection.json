@@ -1,0 +1,621 @@
+{
+  "info": {
+    "name": "SmartBin API",
+    "_postman_id": "smartbin-api-collection-v2",
+    "description": "Complete SmartBin API collection — covers Auth, Bins, Sections, Bin Requests, Cameras, Camera Requests, Transactions, Surrounding Waste, and Crowd Density.\n\nBase URL variable: {{baseUrl}}  (default: https://smartbinpsu.runasp.net)\nAuth token variable: {{jwtToken}}  (set automatically by the Login request)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5025", "type": "string" },
+    { "key": "jwtToken", "value": "", "type": "string" },
+    { "key": "binToken", "value": "f41e1f74-bba8-4012-94bc-f4d7a20031ed", "type": "string" },
+    { "key": "cameraToken", "value": "ce309b7a-eb64-486e-9e35-82e052d06348", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "1 - Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/Auth/register", "host": ["{{baseUrl}}"], "path": ["api","Auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Aa12345678@\",\n  \"fullName\": \"Ahmed Mohamed\"\n}"
+            },
+            "description": "Register a new user. Returns a JWT token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set('jwtToken', json.token);",
+                  "  pm.test('Register succeeded', () => pm.response.to.have.status(200));",
+                  "  pm.test('Token returned', () => pm.expect(json.token).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/Auth/login", "host": ["{{baseUrl}}"], "path": ["api","Auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@gmail.com\",\n  \"password\": \"Aa12345678@\"\n}"
+            },
+            "description": "Login and retrieve JWT. Token is auto-saved to {{jwtToken}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login succeeded', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Token returned', () => pm.expect(json.token).to.be.a('string'));",
+                  "pm.collectionVariables.set('jwtToken', json.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "2 - Bin (SmartBin)",
+      "item": [
+        {
+          "name": "Create Bin (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/SmartBin/Create", "host": ["{{baseUrl}}"], "path": ["api","SmartBin","Create"] },
+            "description": "Admin creates an unassigned bin and gets its IdentificationToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var token = pm.response.json();",
+                  "pm.test('Token returned', () => pm.expect(token).to.be.a('string'));",
+                  "pm.collectionVariables.set('binToken', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign Bin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/SmartBin/Assign", "host": ["{{baseUrl}}"], "path": ["api","SmartBin","Assign"] },
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{binToken}}\"\n}" },
+            "description": "Assign a bin to the authenticated user."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Get All Bins",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/SmartBin", "host": ["{{baseUrl}}"], "path": ["api","SmartBin"] },
+            "description": "Get all bins owned by the logged-in user."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));", "pm.test('Array response', () => pm.expect(pm.response.json()).to.be.an('array'));"] } }]
+        },
+        {
+          "name": "Get Bin by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/SmartBin/1", "host": ["{{baseUrl}}"], "path": ["api","SmartBin","1"] },
+            "description": "Get a specific bin with its sections."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        },
+        {
+          "name": "Update Bin GPS (Device)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Token", "value": "{{binToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/SmartBin/Update", "host": ["{{baseUrl}}"], "path": ["api","SmartBin","Update"] },
+            "body": { "mode": "raw", "raw": "{\n  \"latitude\": 30.0500,\n  \"longitude\": 31.2400\n}" },
+            "description": "ESP device updates its GPS coordinates using the device token (no JWT needed)."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        },
+        {
+          "name": "Delete Bin (Device)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Token", "value": "{{binToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/SmartBin/Delete", "host": ["{{baseUrl}}"], "path": ["api","SmartBin","Delete"] },
+            "description": "Delete a bin using its device token."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "3 - Bin Sections",
+      "item": [
+        {
+          "name": "Get Bin Sections",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/BinSection/SmartBin/1", "host": ["{{baseUrl}}"], "path": ["api","BinSection","SmartBin","1"] },
+            "description": "Get all sections (compartments) for bin with ID=1."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        },
+        {
+          "name": "Update Bin Section (Device)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Token", "value": "{{binToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/BinSection/update", "host": ["{{baseUrl}}"], "path": ["api","BinSection","update"] },
+            "body": { "mode": "raw", "raw": "{\n  \"materialName\": \"Plastic\",\n  \"levelPercentage\": 60.0,\n  \"weight\": 1.8\n}" },
+            "description": "ESP device updates fill level and weight for a bin section."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "4 - Bin Requests",
+      "item": [
+        {
+          "name": "Submit Bin Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/BinRequest", "host": ["{{baseUrl}}"], "path": ["api","BinRequest"] },
+            "body": { "mode": "raw", "raw": "{\n  \"requesterName\": \"Ahmed Mohamed\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}" },
+            "description": "User submits a request to get a Smart Bin."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Get All Bin Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/BinRequest", "host": ["{{baseUrl}}"], "path": ["api","BinRequest"] },
+            "description": "Admin gets all bin requests."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Get My Bin Requests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/BinRequest/my", "host": ["{{baseUrl}}"], "path": ["api","BinRequest","my"] },
+            "description": "User gets their own bin requests."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Accept Bin Request (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/BinRequest/1/Accept", "host": ["{{baseUrl}}"], "path": ["api","BinRequest","1","Accept"] },
+            "description": "Admin accepts a pending bin request — creates the bin token and assigns it."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 400', () => pm.expect(pm.response.code).to.be.oneOf([200,400]));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "5 - Camera",
+      "item": [
+        {
+          "name": "Create Camera (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/Camera/Create", "host": ["{{baseUrl}}"], "path": ["api","Camera","Create"] },
+            "description": "Admin creates a new unassigned camera token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var token = pm.response.json();",
+                  "pm.test('Token returned', () => pm.expect(token).to.be.a('string'));",
+                  "pm.collectionVariables.set('cameraToken', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign Camera",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/Camera/Assign", "host": ["{{baseUrl}}"], "path": ["api","Camera","Assign"] },
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{cameraToken}}\"\n}" },
+            "description": "Assign a camera to the authenticated user."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Get All Cameras",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/Camera", "host": ["{{baseUrl}}"], "path": ["api","Camera"] },
+            "description": "Get all cameras belonging to the logged-in user."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));", "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"] } }]
+        },
+        {
+          "name": "Get Camera by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/Camera/1", "host": ["{{baseUrl}}"], "path": ["api","Camera","1"] },
+            "description": "Get a specific camera by ID."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        },
+        {
+          "name": "Update Camera GPS (Device)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Token", "value": "{{cameraToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/Camera/Update", "host": ["{{baseUrl}}"], "path": ["api","Camera","Update"] },
+            "body": { "mode": "raw", "raw": "{\n  \"latitude\": 30.0600,\n  \"longitude\": 31.2500\n}" },
+            "description": "Camera device updates its GPS coordinates."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        },
+        {
+          "name": "Delete Camera (Device)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Token", "value": "{{cameraToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/Camera/Delete", "host": ["{{baseUrl}}"], "path": ["api","Camera","Delete"] },
+            "description": "Delete a camera using its device token."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "6 - Camera Requests",
+      "item": [
+        {
+          "name": "Submit Camera Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/CameraRequest", "host": ["{{baseUrl}}"], "path": ["api","CameraRequest"] },
+            "body": { "mode": "raw", "raw": "{\n  \"requesterName\": \"Sara Ali\",\n  \"latitude\": 30.0600,\n  \"longitude\": 31.2600\n}" },
+            "description": "User submits a request for a new camera."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Get All Camera Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/CameraRequest", "host": ["{{baseUrl}}"], "path": ["api","CameraRequest"] },
+            "description": "Admin views all camera requests."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Get My Camera Requests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/CameraRequest/my", "host": ["{{baseUrl}}"], "path": ["api","CameraRequest","my"] },
+            "description": "User gets their own camera requests."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Accept Camera Request (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/CameraRequest/1/Accept", "host": ["{{baseUrl}}"], "path": ["api","CameraRequest","1","Accept"] },
+            "description": "Admin accepts a camera request — generates and assigns the camera token."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 400', () => pm.expect(pm.response.code).to.be.oneOf([200,400]));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "7 - Transactions (AI Classification)",
+      "item": [
+        {
+          "name": "Get Transactions (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/Transaction/SmartBin/1/page/1?PageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","Transaction","SmartBin","1","page","1"],
+              "query": [{ "key": "PageSize", "value": "10" }]
+            },
+            "description": "Get paginated transaction history for bin ID=1."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Add Transaction (Device)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Token", "value": "{{binToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/Transaction", "host": ["{{baseUrl}}"], "path": ["api","Transaction"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "MaterialName", "value": "Plastic", "type": "text" },
+                { "key": "Image", "type": "file", "src": "" }
+              ]
+            },
+            "description": "ESP device submits a material classification. Provide MaterialName OR Image (or both)."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200 or 400', () => pm.expect(pm.response.code).to.be.oneOf([200,400]));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "8 - Surrounding Waste",
+      "item": [
+        {
+          "name": "Report Surrounding Waste (AI Service → API)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Camera-Token", "value": "{{cameraToken}}", "description": "Camera identification token" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/SurroundingWaste/report", "host": ["{{baseUrl}}"], "path": ["api","SurroundingWaste","report"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wasteLevel\": \"High\",\n  \"detectedObjectsCount\": 7,\n  \"aiConfidencePercentage\": 91.5,\n  \"imageBase64\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"timestamp\": \"2026-06-22T10:00:00Z\"\n}"
+            },
+            "description": "External AI first-hop service posts surrounding waste AI results.\n\nHeaders:\n  X-Camera-Token — identifies the camera (no JWT needed)\n\nBody (JSON):\n  wasteLevel              : Low / Medium / High\n  detectedObjectsCount    : number of waste objects\n  aiConfidencePercentage  : 0–100 float\n  imageBase64             : base64-encoded image (with or without data URI prefix)\n  timestamp               : ISO 8601 UTC timestamp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));",
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Message returned', () => pm.expect(json.message).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Latest Surrounding Waste (Dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/SurroundingWaste?CameraId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","SurroundingWaste"],
+              "query": [
+                { "key": "CameraId", "value": "1", "description": "Use CameraId OR BinId" },
+                { "key": "BinId", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Dashboard: get the most recent surrounding waste reading.\n\nQuery (provide one):\n  CameraId — filter by camera\n  BinId    — filter by bin\n\nResponse includes: id, wasteLevel, imageUrl, detectedObjectsCount, aiConfidencePercentage, timestamp, cameraId"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));",
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Has wasteLevel', () => pm.expect(json).to.have.property('wasteLevel'));",
+                  "  pm.test('Has imageUrl', () => pm.expect(json).to.have.property('imageUrl'));",
+                  "  pm.test('Has detectedObjectsCount', () => pm.expect(json).to.have.property('detectedObjectsCount'));",
+                  "  pm.test('Has aiConfidencePercentage', () => pm.expect(json).to.have.property('aiConfidencePercentage'));",
+                  "  pm.test('Has timestamp', () => pm.expect(json).to.have.property('timestamp'));",
+                  "  pm.test('Has cameraId', () => pm.expect(json).to.have.property('cameraId'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Surrounding Waste History (Dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/SurroundingWaste/history?CameraId=1&take=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","SurroundingWaste","history"],
+              "query": [
+                { "key": "CameraId", "value": "1", "description": "Use CameraId OR BinId" },
+                { "key": "BinId", "value": "", "disabled": true },
+                { "key": "take", "value": "20", "description": "Max records (default 50)" }
+              ]
+            },
+            "description": "Dashboard: get historical surrounding waste readings, newest first.\n\nResponse is an array. Each item: id, wasteLevel, imageUrl, detectedObjectsCount, aiConfidencePercentage, timestamp, cameraId"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Array response', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "9 - Crowd Density",
+      "item": [
+        {
+          "name": "Report Crowd Density (AI Service → API)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Camera-Token", "value": "{{cameraToken}}", "description": "Camera identification token" },
+              { "key": "X-Bin-Token", "value": "{{binToken}}", "description": "Bin identification token (links crowd to nearby bin)" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/CrowdDensity/report", "host": ["{{baseUrl}}"], "path": ["api","CrowdDensity","report"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"densityLevel\": \"Medium\",\n  \"peopleCount\": 12,\n  \"aiConfidencePercentage\": 87.3,\n  \"imageBase64\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"timestamp\": \"2026-06-22T10:00:00Z\"\n}"
+            },
+            "description": "External AI first-hop service posts crowd density AI results.\n\nHeaders (BOTH required):\n  X-Camera-Token — identifies the camera that captured the image\n  X-Bin-Token    — identifies the nearby bin this crowd reading is linked to\n\nBody (JSON):\n  densityLevel           : Low / Medium / High\n  peopleCount            : number of people detected\n  aiConfidencePercentage : 0–100 float\n  imageBase64            : base64-encoded image (with or without data URI prefix)\n  timestamp              : ISO 8601 UTC timestamp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));",
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Message returned', () => pm.expect(json.message).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Latest Crowd Density (Dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/CrowdDensity?CameraId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","CrowdDensity"],
+              "query": [
+                { "key": "CameraId", "value": "1", "description": "Use CameraId OR BinId" },
+                { "key": "BinId", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Dashboard: get the most recent crowd density reading.\n\nResponse includes: crowdId, densityLevel, imageUrl, peopleCount, aiConfidencePercentage, timestamp, cameraId, binId"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200,404]));",
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Has densityLevel', () => pm.expect(json).to.have.property('densityLevel'));",
+                  "  pm.test('Has imageUrl', () => pm.expect(json).to.have.property('imageUrl'));",
+                  "  pm.test('Has peopleCount', () => pm.expect(json).to.have.property('peopleCount'));",
+                  "  pm.test('Has aiConfidencePercentage', () => pm.expect(json).to.have.property('aiConfidencePercentage'));",
+                  "  pm.test('Has timestamp', () => pm.expect(json).to.have.property('timestamp'));",
+                  "  pm.test('Has cameraId', () => pm.expect(json).to.have.property('cameraId'));",
+                  "  pm.test('Has binId', () => pm.expect(json).to.have.property('binId'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Crowd Density History (Dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/CrowdDensity/history?CameraId=1&take=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","CrowdDensity","history"],
+              "query": [
+                { "key": "CameraId", "value": "1", "description": "Use CameraId OR BinId" },
+                { "key": "BinId", "value": "", "disabled": true },
+                { "key": "take", "value": "20", "description": "Max records (default 50)" }
+              ]
+            },
+            "description": "Dashboard: get historical crowd density readings, newest first.\n\nResponse is an array. Each item: crowdId, densityLevel, imageUrl, peopleCount, aiConfidencePercentage, timestamp, cameraId, binId"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Array response', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+
+  ]
+}

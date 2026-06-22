@@ -32,6 +32,8 @@ namespace SmartBin
             builder.Services.AddScoped<IBinRequestService, BinRequestService>();
             builder.Services.AddScoped<ICameraService, CameraService>();
             builder.Services.AddScoped<ICameraRequestService, CameraRequestService>();
+            builder.Services.AddScoped<ISurroundingWasteService, SurroundingWasteService>();
+            builder.Services.AddScoped<ICrowdDensityService, CrowdDensityService>();
 
             // Identity Setup
             builder.Services.AddIdentityCore<AppUser>()
@@ -138,7 +140,7 @@ namespace SmartBin
                 });
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCors("AllowAll");
 
