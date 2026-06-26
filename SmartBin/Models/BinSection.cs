@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartBin.Models
@@ -10,6 +10,7 @@ namespace SmartBin.Models
         public float LevelPercentage { get; set; }
         public float Weight { get; set; }
         public DateTime? LastUpdated { get; set; }
+        public int Threshold { get; set; } = 80;
 
         [ForeignKey("Bin")]
         public int BinId { get; set; }

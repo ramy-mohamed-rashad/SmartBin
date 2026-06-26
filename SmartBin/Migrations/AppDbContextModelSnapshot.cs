@@ -239,8 +239,14 @@ namespace SmartBin.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BinId"));
 
+                    b.Property<string>("CameraToken")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("FillThreshold")
+                        .HasColumnType("int");
 
                     b.Property<string>("IdentificationToken")
                         .IsRequired()
@@ -325,6 +331,9 @@ namespace SmartBin.Migrations
                     b.Property<int>("MaterialId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Threshold")
+                        .HasColumnType("int");
+
                     b.Property<float>("Weight")
                         .HasColumnType("real");
 
@@ -348,6 +357,9 @@ namespace SmartBin.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("CrowdThreshold")
+                        .HasColumnType("int");
+
                     b.Property<string>("IdentificationToken")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -359,6 +371,9 @@ namespace SmartBin.Migrations
                         .HasColumnType("float");
 
                     b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WasteThreshold")
                         .HasColumnType("int");
 
                     b.HasKey("CameraId");
@@ -466,6 +481,55 @@ namespace SmartBin.Migrations
                     b.HasKey("MaterialId");
 
                     b.ToTable("Materials");
+                });
+
+            modelBuilder.Entity("SmartBin.Models.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<int?>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("CameraId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("SmartBin.Models.SurroundingWaste", b =>
@@ -678,6 +742,29 @@ namespace SmartBin.Migrations
                     b.Navigation("Bin");
 
                     b.Navigation("Camera");
+                });
+
+            modelBuilder.Entity("SmartBin.Models.Notification", b =>
+                {
+                    b.HasOne("SmartBin.Models.Bin", "Bin")
+                        .WithMany()
+                        .HasForeignKey("BinId");
+
+                    b.HasOne("SmartBin.Models.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId");
+
+                    b.HasOne("SmartBin.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SmartBin.Models.SurroundingWaste", b =>

@@ -65,6 +65,19 @@ namespace SmartBin.Controllers
             return Ok(updatedCamera);
         }
 
+        [HttpPut("{id}/Settings")]
+        [Authorize]
+        public async Task<ActionResult> UpdateCameraSettings([FromRoute] int id, [FromBody] CameraSettingsUpdateMV settings)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var success = await _cameraService.UpdateSettingsAsync(id, settings, user);
+            if (!success) return NotFound(new { message = "Camera not found or not owned by user." });
+
+            return Ok(new { message = "Camera settings updated successfully." });
+        }
+
         [HttpDelete("Delete")]
         public async Task<ActionResult> DeleteCamera([FromHeader(Name = "Token")] string IdentificationToken)
         {

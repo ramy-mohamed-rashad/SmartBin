@@ -1,6 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using SmartBin.Models;
 using SmartBin.ModelViews;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SmartBin.Services
 {
@@ -8,16 +12,18 @@ namespace SmartBin.Services
     {
         public Task<SurroundingWasteResultMV> GetLastStateAsync(int? BinId, int? CameraId, AppUser user);
         public Task<List<SurroundingWasteResultMV>> GetHistoryAsync(int? BinId, int? CameraId, AppUser user, int take = 50);
-        public string AddSurroundingWasteAsync(SurroundingWasteInsertMV waste, string token);
+        public Task<string> AddSurroundingWasteAsync(SurroundingWasteInsertMV waste, string token);
     }
 
     public class SurroundingWasteService : ISurroundingWasteService
     {
         private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public SurroundingWasteService(AppDbContext context)
+        public SurroundingWasteService(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         public async Task<SurroundingWasteResultMV> GetLastStateAsync(int? BinId, int? CameraId, AppUser user)
@@ -96,39 +102,67 @@ namespace SmartBin.Services
                 .ToListAsync();
         }
 
-        public string AddSurroundingWasteAsync(SurroundingWasteInsertMV waste, string token)
+        public async Task<string> AddSurroundingWasteAsync(SurroundingWasteInsertMV waste, string token)
         {
-            var bin = _context.Bins.FirstOrDefault(b => b.IdentificationToken == token);
+            var bin = await _context.Bins.FirstOrDefaultAsync(b => b.IdentificationToken == token);
             if (bin != null)
             {
                 var record = new SurroundingWaste
                 {
-                    WasteLevel = "Low",
-                    DetectedObjectsCount = 1,
-                    AiConfidencePercentage = 90.0f,
+                    WasteLevel = waste.WasteLevel ?? "Low",
+                    DetectedObjectsCount = waste.DetectedObjectsCount ?? 1,
+                    AiConfidencePercentage = waste.AiConfidencePercentage ?? 90.0f,
                     ImageUrl = "mocked_waste.jpg",
                     Timestamp = DateTime.UtcNow,
                     BinId = bin.BinId
                 };
                 _context.SurroundingWastes.Add(record);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
+
+                if (record.WasteLevel == "High" && bin.UserId.HasValue)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        bin.UserId.Value,
+                        "High Surrounding Waste Alert",
+                        $"High volume of surrounding waste detected near Bin #{bin.BinId} ({record.DetectedObjectsCount} objects).",
+                        "Waste",
+                        binId: bin.BinId
+                    );
+                }
+
                 return "Surrounding waste added for Bin";
             }
 
-            var camera = _context.Cameras.FirstOrDefault(c => c.IdentificationToken == token);
+            var camera = await _context.Cameras.FirstOrDefaultAsync(c => c.IdentificationToken == token);
             if (camera != null)
             {
                 var record = new SurroundingWaste
                 {
-                    WasteLevel = "Low",
-                    DetectedObjectsCount = 1,
-                    AiConfidencePercentage = 90.0f,
+                    WasteLevel = waste.WasteLevel ?? "Low",
+                    DetectedObjectsCount = waste.DetectedObjectsCount ?? 1,
+                    AiConfidencePercentage = waste.AiConfidencePercentage ?? 90.0f,
                     ImageUrl = "mocked_waste.jpg",
                     Timestamp = DateTime.UtcNow,
                     CameraId = camera.CameraId
                 };
                 _context.SurroundingWastes.Add(record);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
+
+                if (camera.UserId.HasValue && (record.DetectedObjectsCount > camera.WasteThreshold || record.WasteLevel == "High"))
+                {
+                    var connectedBin = await _context.Bins.FirstOrDefaultAsync(b => b.CameraToken == camera.IdentificationToken);
+                    int? binIdToNotify = connectedBin?.BinId;
+
+                    await _notificationService.CreateNotificationAsync(
+                        camera.UserId.Value,
+                        "High Surrounding Waste Alert",
+                        $"Surrounding waste objects count near Camera #{camera.CameraId} reached {record.DetectedObjectsCount} (exceeding your threshold of {camera.WasteThreshold} or classified as High).",
+                        "Waste",
+                        binId: binIdToNotify,
+                        cameraId: camera.CameraId
+                    );
+                }
+
                 return "Surrounding waste added for Camera";
             }
 

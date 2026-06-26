@@ -15,6 +15,7 @@ namespace SmartBin.Models
         public DbSet<BinRequest> BinRequests { get; set; }
         public DbSet<Camera> Cameras { get; set; }
         public DbSet<CameraRequest> CameraRequests { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
     }
 }

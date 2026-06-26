@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmartBin.Models;
 using SmartBin.ModelViews;
 using SmartBin.Services;
@@ -12,6 +12,7 @@ namespace SmartBin.Services
         public Task<bool> DeleteBin(string IdentificationToken);
         public Task<BinDetailsMV> GetBin(int id, AppUser user);
         public Task<List<BinMV>> GetAllBins(AppUser user);
+        public Task<bool> UpdateSettingsAsync(int id, BinSettingsUpdateMV settings, AppUser user);
 
     }
     public class BinService : IBinService
@@ -76,20 +77,71 @@ namespace SmartBin.Services
         public async Task<BinDetailsMV> GetBin(int id, AppUser user)
         {
             var bin = await _context.Bins.FirstOrDefaultAsync(b => b.BinId == id && b.UserId == user.Id);
-            var sections = await _context.BinSections.Include(s => s.Material).Where(s => s.BinId == id).ToListAsync();
             if (bin == null) return null;
+            var sections = await _context.BinSections.Include(s => s.Material).Where(s => s.BinId == id).ToListAsync();
+
+            int? associatedCameraId = null;
+            if (!string.IsNullOrEmpty(bin.CameraToken))
+            {
+                var camera = await _context.Cameras.FirstOrDefaultAsync(c => c.IdentificationToken == bin.CameraToken);
+                if (camera != null)
+                {
+                    associatedCameraId = camera.CameraId;
+                }
+            }
+
             return new BinDetailsMV
             {
                 BinId = bin.BinId,
                 Latitude = bin.Latitude,
                 Longitude = bin.Longitude,
+                FillThreshold = bin.FillThreshold,
+                CameraToken = bin.CameraToken,
+                AssociatedCameraId = associatedCameraId,
                 Sections = sections.Select(s => new BinSectionMV
                 {
                     MaterialName = s.Material.Name,
                     LevelPercentage = s.LevelPercentage,
-                    Weight = s.Weight
+                    Weight = s.Weight,
+                    Threshold = s.Threshold
                 }).ToList()
             };
+        }
+
+        public async Task<bool> UpdateSettingsAsync(int id, BinSettingsUpdateMV settings, AppUser user)
+        {
+            var bin = await _context.Bins.FirstOrDefaultAsync(b => b.BinId == id && b.UserId == user.Id);
+            if (bin == null) return false;
+            bin.FillThreshold = settings.FillThreshold;
+            bin.CameraToken = settings.CameraToken;
+
+            // Update individual section thresholds via a keyword → value map:
+            var thresholdMap = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "metal",   settings.MetalThreshold },
+                { "plastic", settings.PlasticThreshold },
+                { "paper",   settings.PaperThreshold },
+                { "organic", settings.OrganicThreshold },
+                { "glass",   settings.GlassThreshold }
+            };
+
+            var sections = await _context.BinSections.Include(s => s.Material).Where(s => s.BinId == id).ToListAsync();
+            foreach (var sec in sections)
+            {
+                var matName = sec.Material.Name.ToLower();
+                foreach (var kv in thresholdMap)
+                {
+                    if (matName.Contains(kv.Key) && kv.Value.HasValue)
+                    {
+                        sec.Threshold = kv.Value.Value;
+                        break;
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+
         }
 
         public async Task<List<BinMV>> GetAllBins(AppUser user)

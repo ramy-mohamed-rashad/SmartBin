@@ -20,6 +20,33 @@ namespace SmartBin
             builder.Services.AddOpenApi();
             builder.Services.AddEndpointsApiExplorer(); //  Moved to the correct place
 
+            // Print ONNX model metadata on startup
+            try
+            {
+                string modelPath = Path.Combine(builder.Environment.ContentRootPath, "AI_Models", "smart_bin_best_model.onnx");
+                if (File.Exists(modelPath))
+                {
+                    using var session = new Microsoft.ML.OnnxRuntime.InferenceSession(modelPath);
+                    Console.WriteLine("==================================================");
+                    Console.WriteLine("🔍 [ONNX MODEL METADATA]");
+                    foreach (var input in session.InputMetadata)
+                    {
+                        Console.WriteLine($"  Input Name: '{input.Key}'");
+                        Console.WriteLine($"  Input Type: {input.Value.ElementType}");
+                        Console.WriteLine($"  Input Shape: [{string.Join(", ", input.Value.Dimensions)}]");
+                    }
+                    Console.WriteLine("==================================================");
+                }
+                else
+                {
+                    Console.WriteLine($"[ONNX Startup] Model file not found at: {modelPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ONNX Startup] Error loading model: {ex.Message}");
+            }
+
             // Database Context
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("Connection")));
@@ -32,6 +59,9 @@ namespace SmartBin
             builder.Services.AddScoped<IBinRequestService, BinRequestService>();
             builder.Services.AddScoped<ICameraService, CameraService>();
             builder.Services.AddScoped<ICameraRequestService, CameraRequestService>();
+            builder.Services.AddScoped<ICrowdDensityService, CrowdDensityService>();
+            builder.Services.AddScoped<ISurroundingWasteService, SurroundingWasteService>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
 
             // Identity Setup
             builder.Services.AddIdentityCore<AppUser>()
@@ -81,6 +111,17 @@ namespace SmartBin
                 using var migrScope = app.Services.CreateScope();
                 var db = migrScope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Database.MigrateAsync();
+
+                // Update any section with Threshold == 0 to 80
+                var zeroThresholdSections = await db.BinSections.Where(s => s.Threshold == 0).ToListAsync();
+                if (zeroThresholdSections.Any())
+                {
+                    foreach (var s in zeroThresholdSections)
+                    {
+                        s.Threshold = 80;
+                    }
+                    await db.SaveChangesAsync();
+                }
             }
             catch (Exception ex)
             {

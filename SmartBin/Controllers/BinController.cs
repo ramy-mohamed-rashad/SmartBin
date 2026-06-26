@@ -67,6 +67,19 @@ namespace SmartBin.Controllers
             return Ok(updatedBin);
         }
 
+        [HttpPut("{id}/Settings")]
+        [Authorize]
+        public async Task<ActionResult> UpdateBinSettings([FromRoute] int id, [FromBody] BinSettingsUpdateMV settings)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var success = await _binService.UpdateSettingsAsync(id, settings, user);
+            if (!success) return NotFound(new { message = "Bin not found or not owned by user." });
+
+            return Ok(new { message = "Bin settings updated successfully." });
+        }
+
         [HttpDelete("Delete")]
         public async Task<ActionResult> DeleteBin([FromHeader(Name = "Token")] string IdentificationToken)
         {

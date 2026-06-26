@@ -12,6 +12,8 @@ namespace SmartBin.Models
         public string IdentificationToken { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        public int CrowdThreshold { get; set; } = 5;
+        public int WasteThreshold { get; set; } = 5;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("User")]

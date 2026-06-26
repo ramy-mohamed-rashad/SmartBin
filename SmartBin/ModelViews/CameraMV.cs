@@ -12,12 +12,19 @@ namespace SmartBin.ModelViews
         public int CameraId { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
-        // We will return empty lists if no history, or map them as list MV
+        public int CrowdThreshold { get; set; }
+        public int WasteThreshold { get; set; }
     }
 
     public class CameraUpdateMV
     {
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+    }
+
+    public class CameraSettingsUpdateMV
+    {
+        public int CrowdThreshold { get; set; }
+        public int WasteThreshold { get; set; }
     }
 }

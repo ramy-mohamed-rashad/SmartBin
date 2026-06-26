@@ -12,6 +12,7 @@ namespace SmartBin.Services
         public Task<bool> DeleteCamera(string identificationToken);
         public Task<CameraDetailsMV> GetCamera(int id, AppUser user);
         public Task<List<CameraMV>> GetAllCameras(AppUser user);
+        public Task<bool> UpdateSettingsAsync(int id, CameraSettingsUpdateMV settings, AppUser user);
     }
 
     public class CameraService : ICameraService
@@ -75,8 +76,20 @@ namespace SmartBin.Services
             {
                 CameraId = camera.CameraId,
                 Latitude = camera.Latitude,
-                Longitude = camera.Longitude
+                Longitude = camera.Longitude,
+                CrowdThreshold = camera.CrowdThreshold,
+                WasteThreshold = camera.WasteThreshold
             };
+        }
+
+        public async Task<bool> UpdateSettingsAsync(int id, CameraSettingsUpdateMV settings, AppUser user)
+        {
+            var camera = await _context.Cameras.FirstOrDefaultAsync(c => c.CameraId == id && c.UserId == user.Id);
+            if (camera == null) return false;
+            camera.CrowdThreshold = settings.CrowdThreshold;
+            camera.WasteThreshold = settings.WasteThreshold;
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<List<CameraMV>> GetAllCameras(AppUser user)
